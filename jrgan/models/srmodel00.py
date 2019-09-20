@@ -27,14 +27,14 @@ class SRModel00(BasicModel):
         self._learning_rate = learning_rate
         self._optimizer = Adam(self._learning_rate, 0.5)
 
-        self.vgg = self._build_vgg()
-        self.vgg.trainable = False
-        self.vgg.compile(loss='mse',
-                         optimizer=self._optimizer,
-                         metrics=['accuracy'])
+        self._vgg = self._build_vgg()
+        self._vgg.trainable = False
+        self._vgg.compile(loss='mse',
+                          optimizer=self._optimizer,
+                          metrics=['accuracy'])
 
         # Configure data loader
-        self.dataset_name = 'img_align_celeba'
+        self.dataset_name = path_dataset
         self.data_loader = DataLoader(dataset_name=self.dataset_name,
                                       img_res=(self._output_shape[0],
                                                self._output_shape[1]))
@@ -49,16 +49,16 @@ class SRModel00(BasicModel):
                           metrics=['accuracy'])
 
         self._gen = FactoryGen.getgen(0, input_shape, filters_gen, model=True)
-        shape_input_image = Input(shape=input_shape)
-        fake_output = self._gen(shape_input_image)
+        fake_input_image = Input(shape=input_shape)
+        fake_output = self._gen(fake_input_image)
 
-        shape_output_image = Input(shape=self._output_shape)
-        fake_features = self._vgg(shape_output_image)
+        fake_output_image = Input(shape=self._output_shape)
+        fake_features = self._vgg(fake_output)
 
         self._dis.trainable = False
-        validity = self._dis(shape_output_image)
+        validity = self._dis(fake_output_image)
 
-        self._combined = Model([shape_input_image, shape_output_image],
+        self._combined = Model([fake_input_image, fake_output_image],
                                [validity, fake_features])
         self._combined.compile(loss=['binary_crossentropy', 'mse'],
                                loss_weights=[1e-3, 1],
