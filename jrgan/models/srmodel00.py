@@ -80,7 +80,8 @@ class SRModel00(BasicModel):
         img_features = vgg(img)
         return Model(img, img_features)
 
-
+    """
+    """
     def train(self, epochs, batch_size=1, sample_interval=50):
         start_time = datetime.datetime.now()
         for epoch in range(epochs):
@@ -89,14 +90,16 @@ class SRModel00(BasicModel):
             # ----------------------
             # Sample images and their conditioning counterparts
             imgs_hr, imgs_lr = self.data_loader.load_data(batch_size)
+            # print(imgs_hr.shape)
+            # print(imgs_lr.shape)
             # From low res. image generate high res. version
-            fake_hr = self.generator.predict(imgs_lr)
+            fake_hr = self._gen.predict(imgs_lr)
             #
             valid = np.ones((batch_size,) + self.disc_patch)
             fake = np.zeros((batch_size,) + self.disc_patch)
             # Train the discriminators (original images = real / generated = Fake)
-            d_loss_real = self.discriminator.train_on_batch(imgs_hr, valid)
-            d_loss_fake = self.discriminator.train_on_batch(fake_hr, fake)
+            d_loss_real = self._dis.train_on_batch(imgs_hr, valid)
+            d_loss_fake = self._dis.train_on_batch(fake_hr, fake)
             d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
             # ------------------
             #  Train Generator
@@ -106,10 +109,10 @@ class SRModel00(BasicModel):
             # The generators want the discriminators to label the generated images as real
             valid = np.ones((batch_size,) + self.disc_patch)
             # Extract ground truth image features using pre-trained VGG19 model
-            image_features = self.vgg.predict(imgs_hr)
+            image_features = self._vgg.predict(imgs_hr)
             # Train the generators
-            g_loss = self.combined.train_on_batch([imgs_lr, imgs_hr],
-                                                  [valid, image_features])
+            g_loss = self._combined.train_on_batch([imgs_lr, imgs_hr],
+                                                   [valid, image_features])
             elapsed_time = datetime.datetime.now() - start_time
             # Plot the progress
             print("%d time: %s" % (epoch, elapsed_time))

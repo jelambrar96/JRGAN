@@ -4,7 +4,9 @@ import os
 
 import numpy as np
 # import scipy.misc
-from PIL import Image
+# from PIL import Image
+
+import cv2
 
 from glob import glob
 # import matplotlib.pyplot as plt
@@ -25,21 +27,28 @@ class DataLoader:
         # data_type = "train" if not is_testing else "test"
         # save all images on list of paths
         dir_dataset = os.path.join(self.dataset_name, '*')
-        print(dir_dataset)
+        # print(dir_dataset)
         path = glob(dir_dataset)
-        print(path)
+        # print(path)
         # select random
         batch_images = np.random.choice(path, size=batch_size)
         imgs_hr = []
         imgs_lr = []
 
-        for img_path in batch_images:
-            img = self.load_image(img_path)
-            h, w = self.img_res
-            low_h, low_w = int(h * self._downscale), int(w * self._downscale)
+        h, w = self.img_res
+        low_h, low_w = int(h * self._downscale), int(w * self._downscale)
 
-            img_hr = scipy.misc.imresize(img, self.img_res)
-            img_lr = scipy.misc.imresize(img, (low_h, low_w))
+        for img_path in batch_images:
+
+            # img = self.load_image(img_path)
+            # img_hr = self.resize_image(img, self.img_res)
+            # img_lr = self.resize_image(img, (low_h, low_w))
+
+            img_hr, img_lr = self.load_and_reize(img_path, self.img_res,
+                                                 (low_h, low_w))
+            # print('CEHCKING SHAPES...')
+            # print(img_hr.shape)
+            # print(img_lr.shape)
 
             # If training => do random flip
             if not is_testing and np.random.random() < 0.5:
@@ -58,5 +67,22 @@ class DataLoader:
     """
     def load_image(self, path):
         # return scipy.misc.imread(path, mode='RGB').astype(np.float)
-        return np.array(Image.open(path), dtype=np.float)# .astype(np.float)
+        # return np.array(Image.open(path), dtype=np.float) # .astype(np.float)
+        return cv2.imread(path)
 
+    def resize_image(self, image, size):
+        return image
+
+    def load_and_reize(self, image_path, size1, size2):
+        """
+        image = Image.open(image_path)
+        h_image = np.array(image.thumbnail(size1, Image.ANTIALIAS),
+                           dtype=np.float32)
+        l_image = np.array(image.thumbnail(size2, Image.ANTIALIAS),
+                           dtype=np.float32)
+        print(h_image.shape)
+        print(l_image.shape)
+        return h_image, l_image
+        """
+        image = cv2.imread(image_path)
+        return cv2.resize(image, size1), cv2.resize(image, size2)
